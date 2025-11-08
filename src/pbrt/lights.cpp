@@ -859,7 +859,7 @@ PBRT_CPU_GPU pstd::optional<LightLeSample> DiffuseAreaLight::SampleLe(Point2f u1
         }
     }
     if (pdfDir == 0)
-        return {}
+        return {};
     // Return _LightLeSample_ for ray leaving area light
     const Interaction &intr = ss->intr;
     Frame nFrame = Frame::FromZ(intr.n);

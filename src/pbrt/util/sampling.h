@@ -416,26 +416,6 @@ PBRT_CPU_GPU inline Vector3f SampleCosineHemisphere(Point2f u) {
 PBRT_CPU_GPU inline Float CosineHemispherePDF(Float cosTheta) {
     return cosTheta * InvPi;
 }
-// sample on +z hemisphere with pdf = (s+2)/(2π) * (cosθ)^{s+1}
-PBRT_CPU_GPU
-inline Vector3f SampleFocused(Point2f u, Float s) {
-    // phi uniformly distributed in [0, 2π)
-    Float phi = 2 * Pi * u[0];
-
-    // μ = cosθ with p(μ) = (s+2) * μ^{s+1}  =>  μ = u2^{1/(s+2)}
-    Float mu = std::pow(u[1], 1.f / (s + 2.f));
-    Float sinTheta = SafeSqrt(std::max<Float>(0, 1 - mu * mu));
-
-    // Return local-space direction (x,y,z)
-    return Vector3f(std::cos(phi) * sinTheta,
-                    std::sin(phi) * sinTheta,
-                    mu);
-}
-
-
-PBRT_CPU_GPU inline Float FocusedPDF(Float cosTheta, Float s) {
-    return (s + 2.f) / (2.f * Pi) * std::pow(std::abs(cosTheta), s + 1.f) * 0.5f;
-}
 
 PBRT_CPU_GPU inline Point2f InvertCosineHemisphereSample(Vector3f w) {
     return InvertUniformDiskConcentricSample({w.x, w.y});

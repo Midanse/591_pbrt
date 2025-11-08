@@ -847,7 +847,7 @@ PBRT_CPU_GPU pstd::optional<LightLeSample> DiffuseAreaLight::SampleLe(Point2f u1
         if (twoSided) {
             if (u2[0] < 0.5f) {
                 u2[0] = std::min(u2[0] * 2, OneMinusEpsilon);
-                w = SampleFocused(u2, s);            
+                w = 0.5f * SampleFocused(u2, s);            
                 pdfDir = FocusedPDF(w.z, s);
             } else {
                 u2[0] = std::min((u2[0] - 0.5f) * 2, OneMinusEpsilon);

@@ -441,6 +441,7 @@ class DiffuseAreaLight : public LightBase {
     SampledSpectrum L(Point3f p, Normal3f n, Point2f uv, Vector3f w,
                       const SampledWavelengths &lambda) const {
         // Check for zero emitted radiance from point on area light
+        SampledSpectrum L0;
         if (!twoSided && Dot(n, w) < 0)
             return SampledSpectrum(0.f);
         if (AlphaMasked(Interaction(p, uv)))
@@ -453,10 +454,20 @@ class DiffuseAreaLight : public LightBase {
             for (int c = 0; c < 3; ++c)
                 rgb[c] = image.BilerpChannel(uv, c);
             RGBIlluminantSpectrum spec(*imageColorSpace, ClampZero(rgb));
-            return scale * spec.Sample(lambda);
+            L0 = scale * spec.Sample(lambda);
 
         } else
-            return scale * Lemit->Sample(lambda);
+            L0 = scale * Lemit->Sample(lambda);
+
+        if (focus <= 0)
+            return L0;
+            
+        Float mu = std::abs(Dot(n, w));
+        if (mu <= 0) return SampledSpectrum(0.f);
+
+        Float K = 0.5f * (focus + 2.f);
+        return L0 * (K * std::pow(mu, focus));
+
     }
 
     PBRT_CPU_GPU

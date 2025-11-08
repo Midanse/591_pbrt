@@ -7,6 +7,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <pbrt/lights.h>
+#include <iostream>
 
 #include <pbrt/cameras.h>
 #ifdef PBRT_BUILD_GPU_RENDERER
@@ -709,6 +710,7 @@ DiffuseAreaLight::DiffuseAreaLight(const Transform &renderFromLight,
       alpha(type == LightType::Area ? alpha : nullptr),
       area(shape.Area()),
       twoSided(twoSided),
+      focus(focus),
       Lemit(LookupSpectrum(Le)),
       scale(scale),
       image(std::move(im)),

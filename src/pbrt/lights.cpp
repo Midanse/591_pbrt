@@ -685,7 +685,7 @@ DiffuseAreaLight::DiffuseAreaLight(const Transform &renderFromLight,
                                    const MediumInterface &mediumInterface, Spectrum Le,
                                    Float scale, const Shape shape, FloatTexture alpha,
                                    Image im, const RGBColorSpace *imageColorSpace,
-                                   bool twoSided)
+                                   bool twoSided, Float focus)
     : LightBase(
           [](FloatTexture alpha) {
               // Special case handling for area lights with constant zero-valued alpha
@@ -823,25 +823,43 @@ PBRT_CPU_GPU pstd::optional<LightLeSample> DiffuseAreaLight::SampleLe(Point2f u1
     // Sample a cosine-weighted outgoing direction _w_ for area light
     Vector3f w;
     Float pdfDir;
-    if (twoSided) {
-        // Choose side of surface and sample cosine-weighted outgoing direction
-        if (u2[0] < 0.5f) {
-            u2[0] = std::min(u2[0] * 2, OneMinusEpsilon);
-            w = SampleCosineHemisphere(u2);
+    if (focus <= 0) {
+        // original
+        if (twoSided) {
+            if (u2[0] < 0.5f) {
+                u2[0] = std::min(u2[0] * 2, OneMinusEpsilon);
+                w = SampleCosineHemisphere(u2);
+            } else {
+                u2[0] = std::min((u2[0] - 0.5f) * 2, OneMinusEpsilon);
+                w = SampleCosineHemisphere(u2);
+                w.z *= -1;
+            }
+            pdfDir = CosineHemispherePDF(std::abs(w.z)) / 2;
         } else {
-            u2[0] = std::min((u2[0] - 0.5f) * 2, OneMinusEpsilon);
             w = SampleCosineHemisphere(u2);
-            w.z *= -1;
+            pdfDir = CosineHemispherePDF(w.z);
         }
-        pdfDir = CosineHemispherePDF(std::abs(w.z)) / 2;
-
     } else {
-        w = SampleCosineHemisphere(u2);
-        pdfDir = CosineHemispherePDF(w.z);
+        // focused sampling with pdf = (s+2)/(2π) * (n·w)^{s+1} 
+        Float s = focus;
+        if (twoSided) {
+            if (u2[0] < 0.5f) {
+                u2[0] = std::min(u2[0] * 2, OneMinusEpsilon);
+                w = SampleFocused(u2, s);            
+                pdfDir = FocusedPDF(w.z, s);
+            } else {
+                u2[0] = std::min((u2[0] - 0.5f) * 2, OneMinusEpsilon);
+                w = SampleFocused(u2, s);
+                w.z *= -1;
+                pdfDir = FocusedPDF(w.z, s);
+            }
+        } else {
+            w = SampleFocused(u2, s);
+            pdfDir = FocusedPDF(w.z, s);
+        }
     }
     if (pdfDir == 0)
-        return {};
-
+        return {}
     // Return _LightLeSample_ for ray leaving area light
     const Interaction &intr = ss->intr;
     Frame nFrame = Frame::FromZ(intr.n);
@@ -874,6 +892,7 @@ DiffuseAreaLight *DiffuseAreaLight::Create(const Transform &renderFromLight,
     Spectrum L = parameters.GetOneSpectrum("L", nullptr, SpectrumType::Illuminant, alloc);
     Float scale = parameters.GetOneFloat("scale", 1);
     bool twoSided = parameters.GetOneBool("twosided", false);
+    Float focus = parameters.GetOneFloat("focus", 0.f);
 
     std::string filename = ResolveFilename(parameters.GetOneString("filename", ""));
     Image image(alloc);
@@ -937,7 +956,7 @@ DiffuseAreaLight *DiffuseAreaLight::Create(const Transform &renderFromLight,
 
     return alloc.new_object<DiffuseAreaLight>(renderFromLight, medium, L, scale, shape,
                                               alphaTex, std::move(image), imageColorSpace,
-                                              twoSided);
+                                              twoSided, focus);
 }
 
 // UniformInfiniteLight Method Definitions

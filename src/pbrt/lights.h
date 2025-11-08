@@ -410,7 +410,7 @@ class DiffuseAreaLight : public LightBase {
     DiffuseAreaLight(const Transform &renderFromLight,
                      const MediumInterface &mediumInterface, Spectrum Le, Float scale,
                      const Shape shape, FloatTexture alpha, Image image,
-                     const RGBColorSpace *imageColorSpace, bool twoSided);
+                     const RGBColorSpace *imageColorSpace, bool twoSided, Float focus);
 
     static DiffuseAreaLight *Create(const Transform &renderFromLight, Medium medium,
                                     const ParameterDictionary &parameters,
@@ -473,6 +473,7 @@ class DiffuseAreaLight : public LightBase {
     FloatTexture alpha;
     Float area;
     bool twoSided;
+    Float focus;
     const DenselySampledSpectrum *Lemit;
     Float scale;
     Image image;
